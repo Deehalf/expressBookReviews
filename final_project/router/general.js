@@ -51,6 +51,18 @@ public_users.get('/books/author/:author', function (req, res) {
   return res.status(200).json(book);
 });
 
+// Endpoint base para exponer detalle por titulo.
+public_users.get('/books/title/:title', function (req, res) {
+  const title = req.params.title;
+  const book = Object.values(books).find((b) => b.title === title);
+
+  if (!book) {
+    return res.status(404).json({ message: "Book not found" });
+  }
+
+  return res.status(200).json(book);
+});
+
 // Get the book list available in the shop using Axios + async/await
 public_users.get('/', async function (req, res) {
   try {
@@ -93,14 +105,17 @@ public_users.get('/author/:author', async function (req, res) {
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-  //Busca por el título dentro del objeto libro.
-  const title = req.params.title;
-  const book = Object.values(books).find((b) => b.title === title);   
-  if (book) {
-    return res.status(200).type("application/json").send(JSON.stringify(book, null, 2));
-  } else {
-    return res.status(404).json({message: "Book not found"});
+public_users.get('/title/:title', async function (req, res) {
+  try {
+    const title = req.params.title;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const response = await axios.get(`${baseUrl}/books/title/${title}`);
+    return res.status(200).type("application/json").send(JSON.stringify(response.data, null, 2));
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+    return res.status(500).json({ message: "Unable to fetch book details by title using Axios" });
   }
 });
 
