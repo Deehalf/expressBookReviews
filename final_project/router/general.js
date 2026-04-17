@@ -27,6 +27,18 @@ public_users.get('/books',function (req, res) {
   return res.status(200).json(books);
 });
 
+// Endpoint base para exponer detalle por ISBN.
+public_users.get('/books/isbn/:isbn', function (req, res) {
+  const isbn = req.params.isbn;
+  const book = books[isbn] || Object.values(books).find((b) => b.ISBN === isbn);
+
+  if (!book) {
+    return res.status(404).json({ message: "Book not found" });
+  }
+
+  return res.status(200).json(book);
+});
+
 // Get the book list available in the shop using Axios + async/await
 public_users.get('/', async function (req, res) {
   try {
@@ -39,16 +51,19 @@ public_users.get('/', async function (req, res) {
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-  // Busca por clave numérica o por el campo ISBN dentro del objeto libro.
-  const isbn = req.params.isbn;
-  const book = books[isbn] || Object.values(books).find((b) => b.ISBN === isbn);
-  if (book) {
-    return res.status(200).type("application/json").send(JSON.stringify(book, null, 2));
-  } else {
-    return res.status(404).json({message: "Book not found"});
+public_users.get('/isbn/:isbn', async function (req, res) {
+  try {
+    const isbn = req.params.isbn;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const response = await axios.get(`${baseUrl}/books/isbn/${isbn}`);
+    return res.status(200).type("application/json").send(JSON.stringify(response.data, null, 2));
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+    return res.status(500).json({ message: "Unable to fetch book details using Axios" });
   }
- });
+});
   
 // Get book details based on author
 public_users.get('/author/:author',function (req, res) {
