@@ -120,15 +120,17 @@ public_users.get('/title/:title', async function (req, res) {
 });
 
 //  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-  // Busca por clave numérica o por el campo ISBN para obtener sus reseñas.
-  const isbn = req.params.isbn;
-  const book = books[isbn] || Object.values(books).find((b) => b.ISBN === isbn);
-
-  if (book) {
-    return res.status(200).type("application/json").send(JSON.stringify(book.reviews || {}, null, 2));
-  } else {
-    return res.status(404).json({message: "Book not found"});
+public_users.get('/review/:isbn', async function (req, res) {
+  try {
+    const isbn = req.params.isbn;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const response = await axios.get(`${baseUrl}/books/isbn/${isbn}`);
+    return res.status(200).type("application/json").send(JSON.stringify(response.data.reviews || {}, null, 2));
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+    return res.status(500).json({ message: "Unable to fetch book reviews using Axios" });
   }
 });
 
